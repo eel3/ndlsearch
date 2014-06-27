@@ -1,0 +1,110 @@
+#!/bin/sh
+# @(#) NDL search script. Version 1.0.0.20130218
+# need python 2.7, wget or curl, isbnutil
+
+# Copyright (c) 2014 eel3
+#
+# This software is provided 'as-is', without any express or implied
+# warranty. In no event will the authors be held liable for any damages
+# arising from the use of this software.
+#
+# Permission is granted to anyone to use this software for any purpose,
+# including commercial applications, and to alter it and redistribute it
+# freely, subject to the following restrictions:
+#
+#     1. The origin of this software must not be misrepresented; you must not
+#     claim that you wrote the original software. If you use this software
+#     in a product, an acknowledgment in the product documentation would be
+#     appreciated but is not required.
+#
+#     2. Altered source versions must be plainly marked as such, and must not be
+#     misrepresented as being the original software.
+#
+#     3. This notice may not be removed or altered from any source
+#     distribution.
+
+# exit code:
+#   0   success (print book info)
+#   1   no book found
+#   2   network error or invalid response
+#   3   user parameter error
+#   4   trap
+#   5   misc.
+
+readonly progname=`basename "$0"`
+
+# ndlsearch <valid ISBN> <output file>
+ndlsearch() {
+    wget -O "$2" "http://iss.ndl.go.jp/api/opensearch?cnt=1&isbn=$1" 2>/dev/null
+    # curl -s -o "$2" "http://iss.ndl.go.jp/api/opensearch?cnt=1&isbn=$1"
+}
+
+# do_exit <status>
+do_exit() {
+    rm -f "$tmpfile"
+    exit $1
+}
+
+# parse <XML file>
+parse() {
+    LANG=ja_JP.UTF-8 python -c '#coding: utf-8
+import sys
+from xml.etree.ElementTree import ElementTree
+
+# XML namespace
+DC = "{http://purl.org/dc/elements/1.1/}"
+DCTERMS = "{http://purl.org/dc/terms/}"
+OPENSEARCH = "{http://a9.com/-/spec/opensearchrss/1.0/}"
+XSI = "{http://www.w3.org/2001/XMLSchema-instance}"
+
+TOTAL_RESULTS = "channel/" + OPENSEARCH + "totalResults"
+TAGS = (
+    {"title": "ISBN",           "xpath": DC + "identifier[@" + XSI + "type='"'dcndl:ISBN'"']"},
+    {"title": "Title",          "xpath": "title"},
+    {"title": "Author",         "xpath": "author"},
+    {"title": "Publisher",      "xpath": DC + "publisher"},
+    {"title": "Published-Year", "xpath": DCTERMS + "issued[@" + XSI + "type='"'dcterms:W3CDTF'"']"},
+    #{"title": "NDC9",           "xpath": DC + "subject[@" + XSI + "type='"'dcndl:NDC9'"']"},
+)
+
+elem = ElementTree().parse(sys.argv[1])
+if elem.tag != "rss":
+    sys.exit(2)
+
+total = elem.findtext(TOTAL_RESULTS)
+if total == "0":
+    sys.exit(1)
+if total != "1":
+    sys.exit(2)
+
+for tag in TAGS:
+    print tag["title"] + " " + elem.find("channel/item/" + tag["xpath"]).text.encode("utf_8")
+
+sys.exit(0)
+' "$1" 2>/dev/null
+}
+
+if [ $# -ne 1 ]; then
+    echo "usage: $progname <ISBN>" 1>&2
+    exit 3
+fi
+
+isbnutil test "$1"
+if [ $? -ne 0 ]; then
+    echo "$1: not ISBN" 1>&2
+    exit 3
+fi
+
+trap 'rm -f "$tmpfile"; exit 4' 1 2 15
+readonly tmpfile=`mktemp "/tmp/$progname-$$-XXXXXXXXXXXX"` || exit 5
+
+ndlsearch "$1" "$tmpfile" || do_exit 2
+parse "$tmpfile"
+if [ $? -eq 1 ]; then
+    # convert ISBN, and try again
+    : >"$tmpfile"
+    ndlsearch "`isbnutil convert "$1"`" "$tmpfile" || do_exit 2
+    parse "$tmpfile"
+fi
+
+do_exit $?
