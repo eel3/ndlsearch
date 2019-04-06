@@ -39,7 +39,7 @@ IFS=$(printf ' \t\n_'); IFS=${IFS%_}
 export IFS LC_ALL=C LANG=C
 
 readonly progname=${0##*/}
-readonly version=1.1.0.20190405
+readonly version=1.1.1.20190405
 
 # usage <exit-code>
 usage() {
@@ -94,7 +94,7 @@ if elem.tag != "rss":
 total = elem.findtext(TOTAL_RESULTS)
 if total == "0":
     sys.exit(1)
-if total != "1":
+if int(total) < 1:
     sys.exit(2)
 
 for tag in TAGS:
