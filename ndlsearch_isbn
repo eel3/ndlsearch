@@ -84,7 +84,7 @@ TAGS = (
     {"title": "Author",         "xpath": "author"},
     {"title": "Publisher",      "xpath": DC + "publisher"},
     {"title": "Published-Year", "xpath": DCTERMS + "issued[@" + XSI + "type='"'dcterms:W3CDTF'"']"},
-    #{"title": "NDC9",           "xpath": DC + "subject[@" + XSI + "type='"'dcndl:NDC9'"']"},
+    {"title": "NDC9",           "xpath": DC + "subject[@" + XSI + "type='"'dcndl:NDC9'"']"},
 )
 
 elem = ElementTree().parse(sys.argv[1])
@@ -98,7 +98,9 @@ if total != "1":
     sys.exit(2)
 
 for tag in TAGS:
-    print tag["title"] + " " + elem.find("channel/item/" + tag["xpath"]).text.encode("utf_8")
+    subelem = elem.find("channel/item/" + tag["xpath"])
+    if subelem is not None:
+        print tag["title"] + " " + subelem.text.encode("utf_8")
 
 sys.exit(0)
 ' "$1" 2>/dev/null
