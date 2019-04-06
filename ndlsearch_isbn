@@ -1,5 +1,7 @@
 #!/bin/sh
-# @(#) NDL search script. Version 1.0.0.20130218
+# -*- coding: utf-8-unix -*-
+# vim:fileencoding=utf-8:ff=unix
+# @(#) NDL search script.
 # need python 2.7, wget or curl, isbnutil
 
 # Copyright (c) 2014 eel3
@@ -31,7 +33,25 @@
 #   4   trap
 #   5   misc.
 
-readonly progname=`basename "$0"`
+set -u
+umask 0022
+IFS=$(printf ' \t\n_'); IFS=${IFS%_}
+export IFS LC_ALL=C LANG=C
+
+readonly progname=${0##*/}
+readonly version=1.1.0.20190405
+
+# usage <exit-code>
+usage() {
+    echo "usage: $progname [-hv] <ISBN>" 1>&2
+    exit $1
+}
+
+# version (no parameter)
+version() {
+    echo "$progname $version" 1>&2
+    exit 0
+}
 
 # ndlsearch <valid ISBN> <output file>
 ndlsearch() {
@@ -84,10 +104,19 @@ sys.exit(0)
 ' "$1" 2>/dev/null
 }
 
-if [ $# -ne 1 ]; then
-    echo "usage: $progname <ISBN>" 1>&2
-    exit 3
-fi
+# main routine
+
+opt=
+while getopts 'hv' opt; do
+    case $opt in
+    h)      usage 0 ;;
+    v)      version ;;
+    \?)     usage 1 ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+[ $# -eq 1 ] || usage 3
 
 isbnutil test "$1"
 if [ $? -ne 0 ]; then
@@ -96,14 +125,14 @@ if [ $? -ne 0 ]; then
 fi
 
 trap 'rm -f "$tmpfile"; exit 4' 1 2 15
-readonly tmpfile=`mktemp "/tmp/$progname-$$-XXXXXXXXXXXX"` || exit 5
+readonly tmpfile=$(mktemp "/tmp/$progname-$$-XXXXXXXXXXXX") || exit 5
 
 ndlsearch "$1" "$tmpfile" || do_exit 2
 parse "$tmpfile"
 if [ $? -eq 1 ]; then
     # convert ISBN, and try again
     : >"$tmpfile"
-    ndlsearch "`isbnutil convert "$1"`" "$tmpfile" || do_exit 2
+    ndlsearch "$(isbnutil convert "$1")" "$tmpfile" || do_exit 2
     parse "$tmpfile"
 fi
 
