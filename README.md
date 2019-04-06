@@ -12,7 +12,7 @@ zlib License.
 Target environments
 -------------------
 
-Cygwin, Linux, Mac OS X.
+Cygwin, Linux, macOS.
 
 ndlsearch_isbn is shell script (sh),
 and so probably works fine on other Unix-like environment.
