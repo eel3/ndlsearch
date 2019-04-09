@@ -33,7 +33,7 @@ Set up
 Usage
 -----
 
-Please check help message `ndlsearch_isbn`
+Please check help message `ndlsearch_isbn -h`
 
 Example
 -------
@@ -44,4 +44,5 @@ Example
     Author A.V.エイホ, B.W.カーニハン, P.J.ワインバーガー 共著,足立高徳 訳,
     Publisher 新紀元社
     Published-Year 2004
+    NDC9 007.64
     $ _
