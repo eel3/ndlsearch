@@ -21,7 +21,7 @@ Set up
 ------
 
 1. Install wget(1) or curl(1).
-2. Install Python 2.7.
+2. Install Python 3.6.8 or later.
 3. Install [isbnutil](https://github.com/eel3/isbnutil "isbnutil repository").
 4. Put ndlsearch_isbn in a directory registered in PATH.
 5. If you want to use curl(1), you must modify ndlsearch_isbn.
