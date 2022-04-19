@@ -2,7 +2,7 @@
 # -*- coding: utf-8-unix -*-
 # vim:fileencoding=utf-8:ff=unix
 # @(#) NDL search script.
-# need python 2.7, wget or curl, isbnutil
+# need Python 3.x, wget or curl, isbnutil
 
 # Copyright (c) 2014 eel3
 #
